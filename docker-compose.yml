@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  hadoop:
+    build:
+      context: ./hadoop
+    container_name: hadoop_service
+    volumes:
+      - ./:/data/input:ro
+      - ./mapreduce:/app/mapreduce
+      - ./output:/data/output
+    networks:
+      - datamart_net
+
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_service
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - datamart_net
+
+  api:
+    build:
+      context: ./api
+    container_name: api_service
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    volumes:
+      - ./scripts:/app/scripts
+      - ./output:/data/output
+    depends_on:
+      - db
+    networks:
+      - datamart_net
+
+volumes:
+  postgres_data:
+
+networks:
+  datamart_net:
+    driver: bridge
